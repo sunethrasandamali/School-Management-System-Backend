@@ -22,7 +22,7 @@ namespace School_Management_System_Backend.Controllers
         public JsonResult Get()
         {
             string query = @"
-                            select FirstName,LastName,ContactNo,Email 
+                            select TeacherID,FirstName,LastName,ContactNo,Email 
                             from dbo.Teacher
                             ";
 

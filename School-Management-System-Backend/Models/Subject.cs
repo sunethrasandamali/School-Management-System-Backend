@@ -7,7 +7,7 @@ namespace School_Management_System_Backend.Models
 {
     public class Subject
     {
-        public int SubjectId { get; set; }
+        public int SubjectID { get; set; }
 
         public string SubjectName { get; set; }
 

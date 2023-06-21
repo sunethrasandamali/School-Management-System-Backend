@@ -22,7 +22,7 @@ namespace School_Management_System_Backend.Controllers
         public JsonResult Get()
         {
             string query = @"
-                            select StudentID,FirstName,LastName,ContactPerson,ContactNo from
+                            select StudentID,FirstName,LastName,ContactPerson,ContactNo,SEmail,DOB,Age,ClassroomID from
                             dbo.Student
                             ";
 
@@ -125,6 +125,7 @@ namespace School_Management_System_Backend.Controllers
             return new JsonResult("Updated Successfully");
         }
 
+        
         [HttpDelete("{id}")]
         public JsonResult Delete(int id)
         {

@@ -7,7 +7,7 @@ namespace School_Management_System_Backend.Models
 {
     public class Classroom
     {
-        public int ClassroomId { get; set; }
+        public int ClassroomID { get; set; }
 
         public string ClassroomName { get; set; }
     }
