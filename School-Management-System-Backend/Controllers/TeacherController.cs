@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using School_Management_System_Backend.Models;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 
@@ -140,6 +141,80 @@ namespace School_Management_System_Backend.Controllers
             }
 
             return new JsonResult("Deleted Successfully");
+        }
+
+        //get subject list by teacherid
+        [HttpGet("SubjectList/{id}")]
+        public JsonResult GetSubjectNamesByTeacherID(int teacherID)
+        {
+            List<string> subjectNames = new List<string>();
+
+            string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+
+            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            {
+                connection.Open();
+
+                string query = @"
+                                SELECT s.SubjectName
+                                FROM Allocations a
+                                JOIN Subject s ON a.SubjectID = s.SubjectID
+                                WHERE a.TeacherID = @TeacherID
+                               ";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@TeacherID", teacherID);
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string subjectName = reader.GetString(0);
+                            subjectNames.Add(subjectName);
+                        }
+                    }
+                }
+            }
+
+            return new JsonResult(subjectNames);
+        }
+
+        //get classroom list by teacherid
+        [HttpGet("ClassroomList/{id}")]
+        public JsonResult GetClassroomNamesByTeacherID(int teacherID)
+        {
+            List<string> classroomNames = new List<string>();
+
+            string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+
+            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            {
+                connection.Open();
+
+                string query = @"
+                                SELECT c.ClassroomName
+                                FROM Allocations a
+                                JOIN Classroom c ON a.ClassroomID = c.ClassroomID
+                                WHERE a.TeacherID = @TeacherID
+                               ";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@TeacherID", teacherID);
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            string classroomName = reader.GetString(0);
+                            classroomNames.Add(classroomName);
+                        }
+                    }
+                }
+            }
+
+            return new JsonResult(classroomNames);
         }
     }
 }
