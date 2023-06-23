@@ -5,6 +5,7 @@ using School_Management_System_Backend.Models;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace School_Management_System_Backend.Controllers
 {
@@ -45,7 +46,6 @@ namespace School_Management_System_Backend.Controllers
 
             return new JsonResult(table);
         }
-
 
         [HttpPost]
         public JsonResult Post(Teacher teacher)
@@ -143,78 +143,179 @@ namespace School_Management_System_Backend.Controllers
             return new JsonResult("Deleted Successfully");
         }
 
-        //get subject list by teacherid
-        [HttpGet("SubjectList/{id}")]
-        public JsonResult GetSubjectNamesByTeacherID(int teacherID)
+        //get allocated subject list by teacherid
+        [HttpGet("AllocatedSubject/{teacherId:int}")]
+        public JsonResult GetAllocatedSubjects(int teacherId)
         {
-            List<string> subjectNames = new List<string>();
+            string query = @"
+                            SELECT s.SubjectID,s.SubjectName
+                            FROM SubjectAllocation sa
+                            JOIN Subject s ON sa.SubjectID = s.SubjectID
+                            WHERE sa.TeacherID = @TeacherID
+                           ";
 
+            DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+            SqlDataReader myReader;
 
-            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
-                connection.Open();
-
-                string query = @"
-                                SELECT s.SubjectName
-                                FROM Allocations a
-                                JOIN Subject s ON a.SubjectID = s.SubjectID
-                                WHERE a.TeacherID = @TeacherID
-                               ";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
                 {
-                    command.Parameters.AddWithValue("@TeacherID", teacherID);
-
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            string subjectName = reader.GetString(0);
-                            subjectNames.Add(subjectName);
-                        }
-                    }
+                    myCommand.Parameters.AddWithValue("@TeacherID", teacherId);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
                 }
             }
 
-            return new JsonResult(subjectNames);
+            if (table.Rows.Count == 0)
+            {
+                return new JsonResult("No allocated subjects found for the given teacher ID.");
+            }
+
+            //List<string> subjectNames = new List<string>();
+            //foreach (DataRow row in table.Rows)
+            //{
+            //    subjectNames.Add(row["SubjectName"].ToString());
+            //}
+
+            return new JsonResult(table);
         }
 
-        //get classroom list by teacherid
-        [HttpGet("ClassroomList/{id}")]
-        public JsonResult GetClassroomNamesByTeacherID(int teacherID)
+
+        //get allocated classroom list by teacherid
+        [HttpGet("AllocatedClassroom/{teacherId:int}")]
+        public JsonResult GetAllocatedClassrooms(int teacherId)
         {
-            List<string> classroomNames = new List<string>();
+            string query = @"
+                             SELECT c.ClassroomID,c.ClassroomName 
+                             FROM ClassroomAllocation ca
+                             JOIN Classroom c ON ca.ClassroomID = c.ClassroomID
+                             WHERE ca.TeacherID = @TeacherID
+                           ";
 
+            DataTable table = new DataTable();
             string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+            SqlDataReader myReader;
 
-            using (SqlConnection connection = new SqlConnection(sqlDataSource))
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
             {
-                connection.Open();
-
-                string query = @"
-                                SELECT c.ClassroomName
-                                FROM Allocations a
-                                JOIN Classroom c ON a.ClassroomID = c.ClassroomID
-                                WHERE a.TeacherID = @TeacherID
-                               ";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
                 {
-                    command.Parameters.AddWithValue("@TeacherID", teacherID);
-
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            string classroomName = reader.GetString(0);
-                            classroomNames.Add(classroomName);
-                        }
-                    }
+                    myCommand.Parameters.AddWithValue("@TeacherID", teacherId);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
                 }
             }
 
-            return new JsonResult(classroomNames);
+            if (table.Rows.Count == 0)
+            {
+                return new JsonResult("No allocated classsrooms found for the given teacher ID.");
+            }
+
+            //List<string> classroomNames = new List<string>();
+            //foreach (DataRow row in table.Rows)
+            //{
+            //    classroomNames.Add(row["ClassroomName"].ToString());
+            //}
+
+            return new JsonResult(table);
+        }
+
+        [HttpPost("ClassroomAllocate")]
+        public JsonResult AllocateClassroom(ClassroomAllocation allocation)
+        {
+            string query = @"
+                           insert into dbo.ClassroomAllocation
+                           values (@TeacherID,@ClassroomID)
+                            ";
+
+            DataTable table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+            SqlDataReader myReader;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myCommand.Parameters.AddWithValue("@TeacherID", allocation.TeacherID);
+                    myCommand.Parameters.AddWithValue("@ClassroomID", allocation.ClassroomID);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult("Allocated Successfully");
+        }
+
+        [HttpPut("ClassroomDeallocate")]
+        public JsonResult DeallocateClassroom(UpdateClassroomModel deallocation)
+        {
+            string query = @"
+                           update dbo.ClassroomAllocation
+                           set ClassroomID = @ClassroomID
+                            where ClassroomID = @ExistingClassroomID and TeacherID = @TeacherID
+                            ";
+
+            DataTable table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+            SqlDataReader myReader;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myCommand.Parameters.AddWithValue("@ExistingClassroomID", deallocation.ExistingClassroomID);
+                    myCommand.Parameters.AddWithValue("@TeacherID", deallocation.TeacherID);
+                    myCommand.Parameters.AddWithValue("@ClassroomID", deallocation.ClassroomID);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult("Allocated Successfully");
+        }
+
+
+        [HttpPost("SubjectAllocate")]
+        public JsonResult AllocateSubject(SubjectAllocation allocation)
+        {
+            string query = @"
+                           insert into dbo.SubjectAllocation
+                           values (@TeacherID,@SubjectID)
+                            ";
+
+            DataTable table = new DataTable();
+            string sqlDataSource = _configuration.GetConnectionString("SchoolManagementSystem");
+            SqlDataReader myReader;
+
+            using (SqlConnection myCon = new SqlConnection(sqlDataSource))
+            {
+                myCon.Open();
+                using (SqlCommand myCommand = new SqlCommand(query, myCon))
+                {
+                    myCommand.Parameters.AddWithValue("@TeacherID", allocation.TeacherID);
+                    myCommand.Parameters.AddWithValue("@SubjectID", allocation.SubjectID);
+                    myReader = myCommand.ExecuteReader();
+                    table.Load(myReader);
+                    myReader.Close();
+                    myCon.Close();
+                }
+            }
+
+            return new JsonResult("Allocated Successfully");
         }
     }
 }

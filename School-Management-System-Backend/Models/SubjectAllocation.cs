@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace School_Management_System_Backend.Models
 {
-    public class Subject
+    public class SubjectAllocation
     {
+        public int AllocationID { get; set; }
+
+        public int TeacherID { get; set; }
+
         public int SubjectID { get; set; }
-
-        public string SubjectName { get; set; }
-
     }
-
 }
